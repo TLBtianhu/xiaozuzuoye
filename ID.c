@@ -1,7 +1,5 @@
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>   // for system()
-
 #define N 100
 
 struct birth {
@@ -17,18 +15,30 @@ struct person {
     int flag;   // 1:校验正确, 0:校验错误
 };
 
-// 读取文件，返回记录数
+// 读取文件，返回记录数（兼容 Dev-C++）
 int read(struct person p[]) {
     FILE *fp = fopen("person.txt", "r");
     if (fp == NULL) {
-        printf("无法打开 person.txt\n");
+        printf("错误：无法打开 person.txt 文件！\n");
+        printf("请确保 person.txt 放在程序同一个文件夹下。\n");
         return 0;
     }
     int i = 0;
-    while (i < N && fscanf(fp, "%s %s", p[i].ID, p[i].name) == 2) {
-        i++;
+    char line[100];
+    while (i < N && fgets(line, sizeof(line), fp) != NULL) {
+        line[strcspn(line, "\r\n")] = '\0';
+        if (strlen(line) == 0) continue;
+        char id[20], name[30];
+        if (sscanf(line, "%s %s", id, name) == 2) {
+            strcpy(p[i].ID, id);
+            strcpy(p[i].name, name);
+            i++;
+        } else {
+            printf("警告：跳过格式错误的行：%s\n", line);
+        }
     }
     fclose(fp);
+    printf("成功读取 %d 条公民信息。\n", i);
     return i;
 }
 
@@ -143,7 +153,6 @@ void save(struct person p[], int n) {
     printf("正确信息已保存到 person_checked.txt\n");
 }
 
-// 菜单显示
 int prompt(void) {
     int cmd = 0;
     printf("-------------------\n");
@@ -159,9 +168,6 @@ int prompt(void) {
 }
 
 int main(void) {
-    // 自动将控制台代码页设置为简体中文 GBK
-    system("chcp 936 > nul");
-
     struct person p[N];
     int n = read(p);
     if (n == 0) {
